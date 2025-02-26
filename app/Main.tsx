@@ -5,6 +5,7 @@ import { TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Ty
 import { Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon, WbSunny as SunIcon, Bedtime as MoonIcon, Folder as FolderIcon, Description as FileIcon } from '@mui/icons-material';
 import { getFilesAndDirectories } from './server';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 
 interface Item {
     name: string;
@@ -139,7 +140,7 @@ export default function Main({ path }: { path: string }) {
             <Drawer open={mainDrawer} onClose={() => setMainDrawer(false)} sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
                 <Box textAlign='center' p={4} borderBottom={1}>
                     <Typography variant='h4'>
-                        <a href='/'>Iran AIP Charts</a>
+                        <Link href='/'>Iran AIP Charts</Link>
                     </Typography>
                     <small>Access all updated AIP charts of Iran Airports</small>
                 </Box>
