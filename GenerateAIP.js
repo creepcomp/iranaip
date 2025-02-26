@@ -1,6 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+const getCategory = (fileName) => {
+    if (fileName.includes('ADC') || fileName.includes('APDC')) {
+        return 'Ground';
+    } else if (fileName.includes('IAC')) {
+        return 'Approach';
+    } else if (fileName.includes('SID')) {
+        return 'SID';
+    } else if (fileName.includes('STAR')) {
+        return 'STAR';
+    }
+    return null;
+};
+
 const getDirectoryStructure = (dirPath, basePath) => {
     const items = fs.readdirSync(dirPath);
     const structure = [];
@@ -15,11 +28,13 @@ const getDirectoryStructure = (dirPath, basePath) => {
                 type: 'directory',
                 children: getDirectoryStructure(fullPath, basePath)
             });
-        } else {
+        } else if (path.extname(item).toLowerCase() === '.pdf') {
+            const category = getCategory(item);
             structure.push({
                 name: item,
                 type: 'file',
-                url: path.join('/', path.relative(basePath, fullPath))
+                url: path.join('/', path.relative(basePath, fullPath)),
+                category: category
             });
         }
     });
