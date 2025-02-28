@@ -17,7 +17,7 @@ interface Item {
 
 const drawerWidth = 400;
 
-export default function Main({ path }: { path: string }) {
+export default function Browser({ path }: { path: string }) {
     const [items, setItems] = useState<Item[]>([]);
     const [favorites, setFavorites] = useState<Item[]>([]);
     const [selected, setSelected] = useState<Item | undefined>();
@@ -121,7 +121,7 @@ export default function Main({ path }: { path: string }) {
                 </AppBar>
                 <Box flex={1} display='flex'>
                     {selected ? (
-                        <iframe src={"/AIP/" + selected.url} width='100%' height='100%' />
+                        <iframe src={selected.url} width='100%' height='100%' />
                     ) : (
                         <Box textAlign='center' margin='auto'>
                             <Box p={6}>

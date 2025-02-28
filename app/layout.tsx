@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     description: "Access all updated AIP charts of Iran Airports.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
