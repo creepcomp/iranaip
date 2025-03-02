@@ -55,7 +55,7 @@ const Home = () => {
                         <List className="overflow-auto">
                             {loading && <ListItem>Loading...</ListItem>}
                             {airports.map((airport) => (
-                                <ListItem>
+                                <ListItem key={airport.id}>
                                     <ListItemButton key={airport.name} href={`/${airport.icao}`}>
                                         <ListItemText primary={airport.name} secondary={airport.icao} />
                                     </ListItemButton>

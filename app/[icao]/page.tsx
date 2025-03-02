@@ -153,7 +153,7 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
                             {groupedCharts[category]
                                 .filter(chart => chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
                                 .map(chart => (
-                                    <ListItem key={chart.id}> {/* Ensure chart.id is unique */}
+                                    <ListItem key={chart.id}>
                                         <ListItemButton onClick={() => setSelected(chart)} selected={chart === selected}>
                                             <FileIcon sx={{ marginRight: 1 }} />
                                             <ListItemText primary={chart.name} />
