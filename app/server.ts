@@ -1,31 +1,34 @@
 "use server";
 
-import data from "./aip.json";
+import { PrismaClient } from '@prisma/client';
 
-interface DirectoryItem {
-    name: string;
-    type: string;
-    url?: string;
-    children?: DirectoryItem[];
-}
+const prisma = new PrismaClient();
 
-export async function getFilesAndDirectories(dirPath: string): Promise<DirectoryItem[]> {
-    dirPath = decodeURIComponent(dirPath);
-    
-    if (!dirPath) {
-        return (data as DirectoryItem[]).filter(item => item.type === 'directory');
+export async function findAirport(searchQuery: string) {
+    try {
+        const airports = await prisma.airport.findMany({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            contains: searchQuery,
+                            mode: 'insensitive',
+                        },
+                    },
+                    {
+                        icao: {
+                            contains: searchQuery,
+                            mode: 'insensitive',
+                        },
+                    },
+                ],
+            },
+        });
+        return airports;
+    } catch (error) {
+        console.error("Error finding airport:", error);
+        throw new Error("Could not find airport");
+    } finally {
+        await prisma.$disconnect();
     }
-
-    const pathParts = dirPath.split('/').filter(Boolean);
-    let currentLevel = data as DirectoryItem[];
-
-    for (const part of pathParts) {
-        const foundDirectory = currentLevel.find(item => item.type === 'directory' && item.name === part);
-        if (!foundDirectory || !foundDirectory.children) {
-            return [];
-        }
-        currentLevel = foundDirectory.children;
-    }
-
-    return currentLevel;
-}
+};

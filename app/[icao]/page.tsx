@@ -3,24 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Typography, AppBar, Toolbar, createTheme, ThemeProvider, CssBaseline, Box, ListItemButton, Checkbox, Avatar } from '@mui/material';
 import { Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon, WbSunny as SunIcon, Bedtime as MoonIcon, Folder as FolderIcon, Description as FileIcon } from '@mui/icons-material';
-import { getFilesAndDirectories } from './server';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
-
-interface Item {
-    name: string;
-    type: string;
-    url?: string;
-    children?: Item[];
-    category?: string;
-}
+import getAirportCharts from './server';
 
 const drawerWidth = 400;
 
-export default function Browser({ path }: { path: string }) {
-    const [items, setItems] = useState<Item[]>([]);
-    const [favorites, setFavorites] = useState<Item[]>([]);
-    const [selected, setSelected] = useState<Item | undefined>();
+interface Chart {
+    id: string;
+    name: string;
+    url: string;
+    category: string | null;
+    airportId: string;
+}
+
+const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
+    const [charts, setCharts] = useState<Chart[]>([]);
+    const [favorites, setFavorites] = useState<Chart[]>([]);
+    const [selected, setSelected] = useState<Chart | undefined>();
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
     const [mainDrawer, setMainDrawer] = useState<boolean>(true);
@@ -30,24 +30,23 @@ export default function Browser({ path }: { path: string }) {
         const theme = Cookies.get('theme');
         if (theme === 'light' || theme === 'dark') setThemeMode(theme);
 
-        const fetchDirectories = async () => {
-            const data = await getFilesAndDirectories(path);
-            setItems(data);
+        const fetchCharts = async () => {
+            const airport = (await params).icao;
+            const chart = await getAirportCharts(airport);
+            setCharts(chart);
         };
-        fetchDirectories();
+        fetchCharts();
 
         const savedFavorites = Cookies.get('favorites');
         if (savedFavorites) {
             setFavorites(JSON.parse(savedFavorites));
         }
-    }, [path]);
 
-    useEffect(() => {
         window.addEventListener('keydown', handleKeydown);
         return () => {
             window.removeEventListener('keydown', handleKeydown);
         };
-    }, [items]);
+    }, []);
 
     const toggleTheme = () => {
         const newTheme = themeMode === 'dark' ? 'light' : 'dark';
@@ -55,9 +54,9 @@ export default function Browser({ path }: { path: string }) {
         Cookies.set('theme', newTheme);
     };
 
-    const toggleFavorite = (item: Item) => {
+    const toggleFavorite = (chart: Chart) => {
         setFavorites(prev => {
-            const favorites = prev.some(fav => fav === item) ? prev.filter(fav => fav !== item) : [...prev, item];
+            const favorites = prev.some(fav => fav === chart) ? prev.filter(fav => fav !== chart) : [...prev, chart];
             Cookies.set('favorites', JSON.stringify(favorites));
             return favorites;
         });
@@ -66,17 +65,17 @@ export default function Browser({ path }: { path: string }) {
     const handleKeydown = (event: KeyboardEvent) => {
         if (event.key === 'ArrowRight') {
             setSelected(prev => {
-                if (!prev) return items[0];
-                const currentIndex = items.findIndex(item => item.name === prev.name);
-                const nextIndex = (currentIndex + 1) % items.length;
-                return items[nextIndex];
+                if (!prev) return charts[0];
+                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
+                const nextIndex = (currentIndex + 1) % charts.length;
+                return charts[nextIndex];
             });
         } else if (event.key === 'ArrowLeft') {
             setSelected(prev => {
-                if (!prev) return items[0];
-                const currentIndex = items.findIndex(item => item.name === prev.name);
-                const prevIndex = (currentIndex - 1 + items.length) % items.length;
-                return items[prevIndex];
+                if (!prev) return charts[0];
+                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
+                const prevIndex = (currentIndex - 1 + charts.length) % charts.length;
+                return charts[prevIndex];
             });
         }
     };
@@ -87,15 +86,15 @@ export default function Browser({ path }: { path: string }) {
         },
     });
 
-    const groupItemsByCategory = (items: Item[]): Record<string, Item[]> => {
-        const categorizedItems = items.reduce((acc, item) => {
+    const groupChartsByCategory = (charts: Chart[]): Record<string, Chart[]> => {
+        const categorizedItems = charts.reduce((acc, item) => {
             const category = item.category || 'Uncategorized';
             if (!acc[category]) {
                 acc[category] = [];
             }
             acc[category].push(item);
             return acc;
-        }, {} as Record<string, Item[]>);
+        }, {} as Record<string, Chart[]>);
 
         const uncategorizedItems = categorizedItems['Uncategorized'] || [];
         delete categorizedItems['Uncategorized'];
@@ -103,7 +102,7 @@ export default function Browser({ path }: { path: string }) {
         return { ...categorizedItems, Uncategorized: uncategorizedItems };
     };
 
-    const groupedItems = groupItemsByCategory(items);
+    const groupedCharts = groupChartsByCategory(charts);
 
     return (
         <ThemeProvider theme={theme}>
@@ -147,38 +146,23 @@ export default function Browser({ path }: { path: string }) {
                 <Box p={1}>
                     <TextField fullWidth variant='outlined' placeholder='Search...' value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </Box>
-                <Box p={1} display="flex">
-                    {path && <Button variant='outlined' sx={{ marginRight: '5px' }} href='./'>← Back</Button>}
-                    <Button variant='contained' color='secondary' href='/AD/AD 2' sx={{ "flexGrow": 1 }}>Go to Airport Charts</Button>
-                </Box>
                 <List className='overflow-auto'>
-                    {Object.keys(groupedItems)
-                        .sort()
-                        .map((category) => (
-                            <Box key={category}>
-                                <Typography textAlign="center" className='border-b' p={1}>{category}</Typography>
-                                {groupedItems[category]
-                                    .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                    .map(item => (
-                                        <ListItem key={item.name}>
-                                            {item.type === 'directory' ? (
-                                                <ListItemButton href={path ? `/${path}/${item.name}` : item.name}>
-                                                    <FolderIcon sx={{ marginRight: 1 }} />
-                                                    <ListItemText primary={item.name} />
-                                                </ListItemButton>
-                                            ) : (
-                                                <>
-                                                    <ListItemButton onClick={() => setSelected(item)} selected={item === selected}>
-                                                        <FileIcon sx={{ marginRight: 1 }} />
-                                                        <ListItemText primary={item.name} />
-                                                    </ListItemButton>
-                                                    <Checkbox checked={favorites.some(fav => fav.name === item.name)} onChange={() => toggleFavorite(item)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
-                                                </>
-                                            )}
-                                        </ListItem>
-                                    ))}
-                            </Box>
-                        ))}
+                    {charts.length > 0 ? Object.keys(groupedCharts).sort().map((category) => (
+                        <Box key={category}>
+                            <Typography textAlign="center" className='border-b' p={1}>{category}</Typography>
+                            {groupedCharts[category]
+                                .filter(chart => chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(chart => (
+                                    <ListItem key={chart.id}> {/* Use _id as the key */}
+                                        <ListItemButton onClick={() => setSelected(chart)} selected={chart === selected}>
+                                            <FileIcon sx={{ marginRight: 1 }} />
+                                            <ListItemText primary={chart.name} />
+                                        </ListItemButton>
+                                        <Checkbox checked={favorites.some(fav => fav === chart)} onChange={() => toggleFavorite(chart)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
+                                    </ListItem>
+                                ))}
+                        </Box>
+                    )) : <ListItem>Loading ..</ListItem>}
                 </List>
             </Drawer>
             <Drawer anchor='right' open={favoritesDrawer} onClose={() => setFavoritesDrawer(false)} sx={{ display: 'flex', '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
@@ -187,12 +171,12 @@ export default function Browser({ path }: { path: string }) {
                 </Box>
                 {favorites.length ? (
                     <List>
-                        {favorites.map((item) => (
-                            <ListItem key={item.name}>
-                                <ListItemButton onClick={() => setSelected(item)}>
-                                    <ListItemText primary={item.name} />
+                        {favorites.map((chart) => (
+                            <ListItem key={chart.name}>
+                                <ListItemButton onClick={() => setSelected(chart)}>
+                                    <ListItemText primary={chart.name} />
                                 </ListItemButton>
-                                <Checkbox checked={favorites.some(fav => fav === item)} onChange={() => toggleFavorite(item)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
+                                <Checkbox checked={favorites.some(fav => fav === chart)} onChange={() => toggleFavorite(chart)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
                             </ListItem>
                         ))}
                     </List>
@@ -203,3 +187,5 @@ export default function Browser({ path }: { path: string }) {
         </ThemeProvider>
     );
 };
+
+export default Airport;
