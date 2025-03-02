@@ -14,6 +14,7 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [airports, setAirports] = useState<airport[]>([]);
     const [loading, setLoading] = useState(false);
+    const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const theme = createTheme({
         palette: {
@@ -22,23 +23,35 @@ const Home = () => {
     });
 
     useEffect(() => {
-        const fetch = async () => {
-            if (!searchQuery) {
-                setAirports([]);
-                return;
-            }
-
-            setLoading(true);
-            try {
-                const airports = await findAirport(searchQuery);
-                setAirports(airports);
-            } catch (error) {
-                console.error("Error fetching suggestions:", error);
-            } finally {
-                setLoading(false);
-            }
+        if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
         }
-        fetch();
+
+        const timeout = setTimeout(() => {
+            const fetchAirports = async () => {
+                if (!searchQuery) {
+                    setAirports([]);
+                    return;
+                }
+
+                setLoading(true);
+                try {
+                    const airports = await findAirport(searchQuery);
+                    setAirports(airports);
+                } catch (error) {
+                    console.error("Error fetching suggestions:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchAirports();
+        }, 300);
+
+        setDebounceTimeout(timeout);
+
+        return () => {
+            clearTimeout(timeout);
+        };
     }, [searchQuery]);
 
     return (
@@ -51,7 +64,13 @@ const Home = () => {
                         <Typography>Access all updated AIP charts of Iran Airports</Typography>
                     </Box>
                     <Box>
-                        <Input inputProps={{style: { textAlign: 'center' }}} value={searchQuery} onChange={(e) => setSearchQuery(e.currentTarget.value)} placeholder='Search ICAO' fullWidth />
+                        <Input 
+                            inputProps={{style: { textAlign: 'center' }}}
+                            value={searchQuery} 
+                            onChange={(e) => setSearchQuery(e.currentTarget.value)} 
+                            placeholder='Search ICAO' 
+                            fullWidth 
+                        />
                         <List className="overflow-auto">
                             {loading && <ListItem>Loading...</ListItem>}
                             {airports.map((airport) => (

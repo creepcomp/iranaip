@@ -6,13 +6,20 @@ const prisma = new PrismaClient();
 
 const getAirportCharts = async (icao: string) => {
     try {
-        const airport = await prisma.airport.findUnique({
-            where: { icao: icao },
+        const lowerCaseIcao = icao.toLowerCase();
+
+        const airport = await prisma.airport.findFirst({
+            where: {
+                icao: {
+                    equals: lowerCaseIcao,
+                    mode: 'insensitive',
+                },
+            },
             include: { charts: true },
         });
 
         if (!airport) {
-            throw new Error(`Airport with icao "${icao}" not found.`);
+            throw new Error(`Airport with ICAO "${icao}" not found.`);
         }
 
         return airport.charts;
