@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Typography, AppBar, Toolbar, createTheme, ThemeProvider, CssBaseline, Box, ListItemButton, Checkbox, Avatar } from '@mui/material';
-import { Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon, WbSunny as SunIcon, Bedtime as MoonIcon, Folder as FolderIcon, Description as FileIcon } from '@mui/icons-material';
+import { Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon, WbSunny as SunIcon, Bedtime as MoonIcon, Description as FileIcon } from '@mui/icons-material';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import getAirportCharts from './server';
