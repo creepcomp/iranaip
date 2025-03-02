@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Typography, AppBar, Toolbar, createTheme, ThemeProvider, CssBaseline, Box, ListItemButton, Checkbox, Avatar } from '@mui/material';
 import { Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon, WbSunny as SunIcon, Bedtime as MoonIcon, Description as FileIcon } from '@mui/icons-material';
 import Cookies from 'js-cookie';
@@ -26,6 +26,38 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
     const [mainDrawer, setMainDrawer] = useState<boolean>(true);
     const [favoritesDrawer, setFavoritesDrawer] = useState<boolean>(false);
 
+    const toggleTheme = () => {
+        const newTheme = themeMode === 'dark' ? 'light' : 'dark';
+        setThemeMode(newTheme);
+        Cookies.set('theme', newTheme);
+    };
+
+    const toggleFavorite = (chart: Chart) => {
+        setFavorites(prev => {
+            const favorites = prev.some(fav => fav === chart) ? prev.filter(fav => fav !== chart) : [...prev, chart];
+            Cookies.set('favorites', JSON.stringify(favorites));
+            return favorites;
+        });
+    };
+
+    const handleKeydown = useCallback((event: KeyboardEvent) => {
+        if (event.key === 'ArrowRight') {
+            setSelected(prev => {
+                if (!prev) return charts[0];
+                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
+                const nextIndex = (currentIndex + 1) % charts.length;
+                return charts[nextIndex];
+            });
+        } else if (event.key === 'ArrowLeft') {
+            setSelected(prev => {
+                if (!prev) return charts[0];
+                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
+                const prevIndex = (currentIndex - 1 + charts.length) % charts.length;
+                return charts[prevIndex];
+            });
+        }
+    }, [charts]);
+
     useEffect(() => {
         const theme = Cookies.get('theme');
         if (theme === 'light' || theme === 'dark') setThemeMode(theme);
@@ -46,39 +78,7 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
         return () => {
             window.removeEventListener('keydown', handleKeydown);
         };
-    }, []);
-
-    const toggleTheme = () => {
-        const newTheme = themeMode === 'dark' ? 'light' : 'dark';
-        setThemeMode(newTheme);
-        Cookies.set('theme', newTheme);
-    };
-
-    const toggleFavorite = (chart: Chart) => {
-        setFavorites(prev => {
-            const favorites = prev.some(fav => fav === chart) ? prev.filter(fav => fav !== chart) : [...prev, chart];
-            Cookies.set('favorites', JSON.stringify(favorites));
-            return favorites;
-        });
-    };
-
-    const handleKeydown = (event: KeyboardEvent) => {
-        if (event.key === 'ArrowRight') {
-            setSelected(prev => {
-                if (!prev) return charts[0];
-                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
-                const nextIndex = (currentIndex + 1) % charts.length;
-                return charts[nextIndex];
-            });
-        } else if (event.key === 'ArrowLeft') {
-            setSelected(prev => {
-                if (!prev) return charts[0];
-                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
-                const prevIndex = (currentIndex - 1 + charts.length) % charts.length;
-                return charts[prevIndex];
-            });
-        }
-    };
+    }, [handleKeydown, params]);
 
     const theme = createTheme({
         palette: {
@@ -153,12 +153,12 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
                             {groupedCharts[category]
                                 .filter(chart => chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
                                 .map(chart => (
-                                    <ListItem key={chart.id}> {/* Use _id as the key */}
+                                    <ListItem key={chart.id}> {/* Ensure chart.id is unique */}
                                         <ListItemButton onClick={() => setSelected(chart)} selected={chart === selected}>
                                             <FileIcon sx={{ marginRight: 1 }} />
                                             <ListItemText primary={chart.name} />
                                         </ListItemButton>
-                                        <Checkbox checked={favorites.some(fav => fav === chart)} onChange={() => toggleFavorite(chart)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
+                                        <Checkbox checked={favorites.some(fav => fav.id === chart.id)} onChange={() => toggleFavorite(chart)} icon={<StarBorderIcon />} checkedIcon={<StarIcon />} />
                                     </ListItem>
                                 ))}
                         </Box>
