@@ -14,7 +14,6 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [airports, setAirports] = useState<airport[]>([]);
     const [loading, setLoading] = useState(false);
-    const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const theme = createTheme({
         palette: {
@@ -23,36 +22,27 @@ const Home = () => {
     });
 
     useEffect(() => {
-        if (debounceTimeout) {
-            clearTimeout(debounceTimeout);
+        if (!searchQuery) {
+            setAirports([]);
+            return;
         }
 
-        const timeout = setTimeout(() => {
-            const fetchAirports = async () => {
-                if (!searchQuery) {
-                    setAirports([]);
-                    return;
-                }
-
-                setLoading(true);
-                try {
-                    const airports = await findAirport(searchQuery);
-                    setAirports(airports);
-                } catch (error) {
-                    console.error("Error fetching suggestions:", error);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchAirports();
+        const timeout = setTimeout(async () => {
+            setLoading(true);
+            try {
+                const airports = await findAirport(searchQuery);
+                setAirports(airports);
+            } catch (error) {
+                console.error("Error fetching suggestions:", error);
+            } finally {
+                setLoading(false);
+            }
         }, 300);
-
-        setDebounceTimeout(timeout);
 
         return () => {
             clearTimeout(timeout);
         };
-    }, [searchQuery, debounceTimeout]);
+    }, [searchQuery]);
 
     return (
         <ThemeProvider theme={theme}>
