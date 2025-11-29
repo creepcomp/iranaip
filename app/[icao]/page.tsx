@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Typography,
     AppBar, Toolbar, createTheme, ThemeProvider, CssBaseline, Box, ListItemButton,
@@ -9,7 +9,7 @@ import {
 import {
     Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon,
     WbSunny as SunIcon, Bedtime as MoonIcon, Description as FileIcon,
-    Edit as EditIcon, Save as SaveIcon
+    Edit as EditIcon, Save as SaveIcon, Close as CloseIcon
 } from '@mui/icons-material';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
@@ -50,6 +50,8 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
     const [charts, setCharts] = useState<Chart[]>([]);
     const [favorites, setFavorites] = useState<Chart[]>([]);
     const [selected, setSelected] = useState<Chart | undefined>();
+    const [openCharts, setOpenCharts] = useState<Chart[]>([]);
+    const [activeTab, setActiveTab] = useState(0);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
     const [mainDrawer, setMainDrawer] = useState<boolean>(true);
@@ -74,31 +76,13 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
         });
     };
 
-    const handleKeydown = useCallback((event: KeyboardEvent) => {
-        if (event.key === 'ArrowRight') {
-            setSelected(prev => {
-                if (!prev) return charts[0];
-                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
-                const nextIndex = (currentIndex + 1) % charts.length;
-                return charts[nextIndex];
-            });
-        } else if (event.key === 'ArrowLeft') {
-            setSelected(prev => {
-                if (!prev) return charts[0];
-                const currentIndex = charts.findIndex(chart => chart.name === prev.name);
-                const prevIndex = (currentIndex - 1 + charts.length) % charts.length;
-                return charts[prevIndex];
-            });
-        }
-    }, [charts]);
-
     useEffect(() => {
         const theme = Cookies.get('theme');
         if (theme === 'light' || theme === 'dark') setThemeMode(theme);
 
         const savedFavorites = Cookies.get('favorites');
         if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
-        
+
         const fetchCharts = async () => {
             const airport = (await params).icao;
             const chart = await getAirportCharts(airport);
@@ -106,13 +90,6 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
         };
         fetchCharts();
     }, []);
-
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeydown);
-        return () => {
-            window.removeEventListener('keydown', handleKeydown);
-        };
-    }, [handleKeydown]);
 
     const theme = createTheme({ palette: { mode: themeMode } });
 
@@ -139,16 +116,53 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
         setTabIndex(newValue);
     };
 
+    const openChart = (chart: Chart) => {
+        setOpenCharts(prev => {
+            const exists = prev.find(c => c.id === chart.id);
+            const newCharts = exists ? prev : [...prev, chart];
+            setActiveTab(newCharts.findIndex(c => c.id === chart.id));
+            return newCharts;
+        });
+        setSelected(chart);
+    };
+
+    const closeChart = (id: string) => {
+        setOpenCharts((prev) => {
+            const newCharts = prev.filter((c) => c.id !== id);
+            if (activeTab >= newCharts.length) {
+                setActiveTab(newCharts.length - 1 >= 0 ? newCharts.length - 1 : 0);
+            }
+            return newCharts;
+        });
+        if (selected?.id === id) {
+            setSelected(undefined);
+        }
+    };
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <Box display='flex' flexDirection='column' height='100vh'>
-                <AppBar position='static'>
+                <AppBar position='static' >
                     <Toolbar variant='dense'>
                         <IconButton edge='start' onClick={() => setMainDrawer(true)}><MenuIcon /></IconButton>
-                        <Typography variant='h6' sx={{ flexGrow: 1 }} textAlign="center" fontSize="15px">
-                            {selected?.name}
-                        </Typography>
+                        <Box flexGrow={1}>
+                            <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant='scrollable' scrollButtons="auto">
+                                {openCharts.map((chart) => (
+                                    <Tab
+                                        key={chart.id}
+                                        label={
+                                            <Box display="flex">
+                                                <Typography variant='overline'>{chart.name}</Typography>
+                                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); closeChart(chart.id) }} sx={{ ml: 1 }}>
+                                                    <CloseIcon />
+                                                </IconButton>
+                                            </Box>
+                                        }
+                                    />
+                                ))}
+                            </Tabs>
+                        </Box>
                         <IconButton color='inherit' edge='end' onClick={toggleTheme} sx={{ marginRight: '5px' }}>
                             {themeMode === 'dark' ? <SunIcon color='warning' /> : <MoonIcon />}
                         </IconButton>
@@ -156,8 +170,12 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
                     </Toolbar>
                 </AppBar>
                 <Box flex={1} display='flex'>
-                    {selected ? (
-                        <iframe src={`/api/proxy?url=${encodeURIComponent(selected.url)}`} width="100%" height="100%" />
+                    {openCharts.length > 0 ? (
+                        openCharts.map((chart, i) => (
+                            <Box key={chart.id} hidden={activeTab !== i} flex={1} height="100%">
+                                <iframe src={`/api/proxy?url=${encodeURIComponent(chart.url)}`} width="100%" height="100%" style={{ border: "none" }} />
+                            </Box>
+                        ))
                     ) : (
                         <Box textAlign='center' margin='auto'>
                             <Box p={6}>
@@ -220,7 +238,7 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
                                             </>
                                         ) : (
                                             <>
-                                                <ListItemButton onClick={() => setSelected(chart)} selected={chart === selected}>
+                                                <ListItemButton onClick={() => openChart(chart)} selected={chart === selected}>
                                                     <FileIcon sx={{ marginRight: 1 }} />
                                                     <ListItemText primary={chart.name} />
                                                 </ListItemButton>
@@ -252,7 +270,7 @@ const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
                     <List>
                         {favorites.map((chart) => (
                             <ListItem key={chart.name}>
-                                <ListItemButton onClick={() => setSelected(chart)}>
+                                <ListItemButton onClick={() => openChart(chart)}>
                                     <ListItemText primary={chart.name} />
                                 </ListItemButton>
                                 <Checkbox
