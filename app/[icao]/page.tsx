@@ -1,293 +1,115 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import {
-    TextField, List, ListItem, ListItemText, IconButton, Button, Drawer, Typography,
-    AppBar, Toolbar, createTheme, ThemeProvider, CssBaseline, Box, ListItemButton,
-    Checkbox, Avatar, Tabs, Tab
-} from '@mui/material';
-import {
-    Star as StarIcon, StarBorder as StarBorderIcon, Menu as MenuIcon,
-    WbSunny as SunIcon, Bedtime as MoonIcon, Description as FileIcon,
-    Edit as EditIcon, Save as SaveIcon, Close as CloseIcon
-} from '@mui/icons-material';
+import React, { useEffect, useState } from 'react';
+import { AppBar, Box, Button, IconButton, Toolbar, Typography, Avatar, Tabs, Tab } from '@mui/material';
+import { Bedtime as MoonIcon, WbSunny as SunIcon, Menu as MenuIcon, Star as StarIcon, Close as CloseIcon } from '@mui/icons-material';
 import Cookies from 'js-cookie';
-import Link from 'next/link';
-import { getAirportCharts, updateChartName } from './server';
 
-const drawerWidth = 450;
+import { getCharts } from './server';
+import { useTheme } from '../providers/ThemeProvider';
+import { Chart } from '@/prisma/generated/client';
 
-interface Chart {
-    id: string;
-    name: string;
-    url: string;
-    category: string | null;
-    airportId: string;
-}
+import MainDrawer from './components/MainDrawer';
+import FavoritesDrawer from './components/FavoritesDrawer';
+import PDFViewer from './components/PDFViewer';
 
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
-}
+export default function AirportPage({ params }: { params: Promise<{ icao: string }> }) {
+  const { theme, toggleTheme } = useTheme();
 
-function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`category-tabpanel-${index}`}
-            aria-labelledby={`category-tab-${index}`}
-            {...other}
-        >
-            {value === index && <Box p={2}>{children}</Box>}
-        </div>
-    );
-}
+  const [charts, setCharts] = useState<Chart[]>([]);
+  const [favorites, setFavorites] = useState<Chart[]>([]);
+  const [openCharts, setOpenCharts] = useState<Chart[]>([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [mainDrawerOpen, setMainDrawerOpen] = useState(true);
+  const [favoritesDrawerOpen, setFavoritesDrawerOpen] = useState(false);
 
-const Airport = ({ params }: { params: Promise<{ icao: string }> }) => {
-    const [charts, setCharts] = useState<Chart[]>([]);
-    const [favorites, setFavorites] = useState<Chart[]>([]);
-    const [selected, setSelected] = useState<Chart | undefined>();
-    const [openCharts, setOpenCharts] = useState<Chart[]>([]);
-    const [activeTab, setActiveTab] = useState(0);
-    const [searchQuery, setSearchQuery] = useState<string>('');
-    const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
-    const [mainDrawer, setMainDrawer] = useState<boolean>(true);
-    const [favoritesDrawer, setFavoritesDrawer] = useState<boolean>(false);
-    const [editingChartId, setEditingChartId] = useState<string | null>(null);
-    const [newChartName, setNewChartName] = useState<string>('');
-    const [tabIndex, setTabIndex] = useState(0);
+  useEffect(() => {
+    const saved = Cookies.get('favorites');
+    if (saved) setFavorites(JSON.parse(saved));
 
-    const toggleTheme = () => {
-        const newTheme = themeMode === 'dark' ? 'light' : 'dark';
-        setThemeMode(newTheme);
-        Cookies.set('theme', newTheme);
-    };
+    (async () => {
+      const { icao } = await params;
+      setCharts(await getCharts(icao));
+    })();
+  }, [params]);
 
-    const toggleFavorite = (chart: Chart) => {
-        setFavorites(prev => {
-            const favorites = prev.some(fav => fav.id === chart.id)
-                ? prev.filter(fav => fav.id !== chart.id)
-                : [...prev, chart];
-            Cookies.set('favorites', JSON.stringify(favorites));
-            return favorites;
-        });
-    };
+  const toggleFavorite = (chart: Chart) => {
+    setFavorites(prev => {
+      const next = prev.some(c => c.id === chart.id) ? prev.filter(c => c.id !== chart.id) : [...prev, chart];
+      Cookies.set('favorites', JSON.stringify(next));
+      return next;
+    });
+  };
 
-    useEffect(() => {
-        const theme = Cookies.get('theme');
-        if (theme === 'light' || theme === 'dark') setThemeMode(theme);
+  const openChart = (chart: Chart) => {
+    setOpenCharts(prev => {
+      const exists = prev.find(c => c.id === chart.id);
+      const next = exists ? prev : [...prev, chart];
+      setActiveTab(next.findIndex(c => c.id === chart.id));
+      return next;
+    });
+  };
 
-        const savedFavorites = Cookies.get('favorites');
-        if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+  const closeChart = (id: string) => {
+    setOpenCharts(prev => {
+      const next = prev.filter(c => c.id !== id);
+      setActiveTab(Math.max(0, Math.min(activeTab, next.length - 1)));
+      return next;
+    });
+  };
 
-        const fetchCharts = async () => {
-            const airport = (await params).icao;
-            const chart = await getAirportCharts(airport);
-            setCharts(chart);
-        };
-        fetchCharts();
-    }, []);
+  return (
+    <Box display="flex" flexDirection="column" height="100vh">
+      <AppBar position="static">
+        <Toolbar variant="dense">
+          <IconButton onClick={() => setMainDrawerOpen(true)}><MenuIcon /></IconButton>
 
-    const theme = createTheme({ palette: { mode: themeMode } });
+          <Box flexGrow={1}>
+            <Tabs value={activeTab} onChange={(_, newIndex) => setActiveTab(newIndex)} variant="scrollable" scrollButtons="auto">
+              {openCharts.map((chart) => (
+                <Tab key={chart.id} label={
+                  <Box display="flex" alignItems="center">
+                    <Typography variant='caption' noWrap>{chart.name}</Typography>
+                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); closeChart(chart.id); }}><CloseIcon fontSize="small" /></IconButton>
+                  </Box>
+                } />
+              ))}
+            </Tabs>
+          </Box>
 
-    const groupChartsByCategory = (charts: Chart[]): Record<string, Chart[]> => {
-        const categorizedItems = charts.reduce((acc, item) => {
-            const category = item.category || 'Uncategorized';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push(item);
-            return acc;
-        }, {} as Record<string, Chart[]>);
+          <IconButton onClick={toggleTheme}>
+            {theme === 'dark' ? <SunIcon color="warning" /> : <MoonIcon />}
+          </IconButton>
 
-        const uncategorizedItems = categorizedItems['Uncategorized'] || [];
-        delete categorizedItems['Uncategorized'];
+          <IconButton onClick={() => setFavoritesDrawerOpen(true)}>
+            <StarIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
 
-        return { ...categorizedItems, Uncategorized: uncategorizedItems };
-    };
-
-    const groupedCharts = groupChartsByCategory(charts);
-    const customOrder = ["GND", "DEP", "ARR", "APP", "Uncategorized"];
-    const categoryNames = customOrder.filter(cat => groupedCharts[cat]);
-
-
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setTabIndex(newValue);
-    };
-
-    const openChart = (chart: Chart) => {
-        setOpenCharts(prev => {
-            const exists = prev.find(c => c.id === chart.id);
-            const newCharts = exists ? prev : [...prev, chart];
-            setActiveTab(newCharts.findIndex(c => c.id === chart.id));
-            return newCharts;
-        });
-        setSelected(chart);
-    };
-
-    const closeChart = (id: string) => {
-        setOpenCharts((prev) => {
-            const newCharts = prev.filter((c) => c.id !== id);
-            if (activeTab >= newCharts.length) {
-                setActiveTab(newCharts.length - 1 >= 0 ? newCharts.length - 1 : 0);
-            }
-            return newCharts;
-        });
-        if (selected?.id === id) {
-            setSelected(undefined);
-        }
-    };
-
-    return (
-        <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <Box display='flex' flexDirection='column' height='100vh'>
-                <AppBar position='static' >
-                    <Toolbar variant='dense'>
-                        <IconButton edge='start' onClick={() => setMainDrawer(true)}><MenuIcon /></IconButton>
-                        <Box flexGrow={1}>
-                            <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant='scrollable' scrollButtons="auto">
-                                {openCharts.map((chart) => (
-                                    <Tab
-                                        key={chart.id}
-                                        label={
-                                            <Box display="flex">
-                                                <Typography variant='overline'>{chart.name}</Typography>
-                                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); closeChart(chart.id) }} sx={{ ml: 1 }}>
-                                                    <CloseIcon />
-                                                </IconButton>
-                                            </Box>
-                                        }
-                                    />
-                                ))}
-                            </Tabs>
-                        </Box>
-                        <IconButton color='inherit' edge='end' onClick={toggleTheme} sx={{ marginRight: '5px' }}>
-                            {themeMode === 'dark' ? <SunIcon color='warning' /> : <MoonIcon />}
-                        </IconButton>
-                        <IconButton edge='end' onClick={() => setFavoritesDrawer(true)}><StarIcon /></IconButton>
-                    </Toolbar>
-                </AppBar>
-                <Box flex={1} display='flex'>
-                    {openCharts.length > 0 ? (
-                        openCharts.map((chart, i) => (
-                            <Box key={chart.id} hidden={activeTab !== i} flex={1} height="100%">
-                                <iframe src={`/api/proxy?url=${encodeURIComponent(chart.url)}`} width="100%" height="100%" style={{ border: "none" }} />
-                            </Box>
-                        ))
-                    ) : (
-                        <Box textAlign='center' margin='auto'>
-                            <Box p={6}>
-                                <Typography variant='h4' p={1}>Iran AIP Charts</Typography>
-                                <Typography>Access all updated AIP charts of Iran Airports</Typography>
-                            </Box>
-                            <Button href="https://www.vatir.ir"><Avatar src='/vatir.jpg' sx={{ margin: 1 }} /></Button>
-                            <Button href="https://www.iravirtual.com"><Avatar src='/iravirtual.jpg' sx={{ margin: 1 }} /></Button>
-                            <Typography>
-                                <small>Developed by <a href='https://github.com/creepcomp'>Creepcomp</a></small>
-                            </Typography>
-                        </Box>
-                    )}
-                </Box>
+      <Box flex={1} display="flex" overflow="hidden">
+        {openCharts.length ? (
+          openCharts.map((chart, i) => (
+            <Box key={chart.id} flex={1} display={activeTab === i ? 'flex' : 'none'} overflow="hidden">
+              <PDFViewer chart={chart} theme={theme} />
             </Box>
+          ))
+        ) : (
+          <Box m="auto" textAlign="center">
+            <Typography variant="h4">Iran AIP Charts</Typography>
+            <Typography>Access all updated AIP charts of Iran Airports</Typography>
+            <Box mt={2}>
+              <Button href="https://www.vatir.ir"><Avatar src="/vatir.jpg" /></Button>
+              <Button href="https://www.iravirtual.com"><Avatar src="/iravirtual.jpg" /></Button>
+            </Box>
+            <Typography variant="caption">Developed by <a href="https://github.com/creepcomp">Creepcomp</a></Typography>
+          </Box>
+        )}
+      </Box>
 
-            <Drawer open={mainDrawer} onClose={() => setMainDrawer(false)} sx={{ '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
-                <Box textAlign='center' p={4} borderBottom={1}>
-                    <Typography variant='h4'>
-                        <Link href='/'>Iran AIP Charts</Link>
-                    </Typography>
-                    <small>Access all updated AIP charts of Iran Airports</small>
-                </Box>
-                <Box p={1}>
-                    <TextField fullWidth variant='outlined' placeholder='Search...' value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                </Box>
+      <MainDrawer charts={charts} favorites={favorites} open={mainDrawerOpen} onClose={() => setMainDrawerOpen(false)} onToggleFavorite={toggleFavorite} onOpenChart={openChart} />
 
-                <Tabs value={tabIndex} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
-                    {categoryNames.map(category => (
-                        <Tab key={category} label={category} />
-                    ))}
-                </Tabs>
-
-                {categoryNames.map((category, idx) => (
-                    <TabPanel key={category} value={tabIndex} index={idx}>
-                        <List>
-                            {groupedCharts[category]
-                                .filter(chart => chart.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                .map(chart => (
-                                    <ListItem key={chart.id} sx={{ display: 'flex', alignItems: 'center' }}>
-                                        {editingChartId === chart.id ? (
-                                            <>
-                                                <TextField
-                                                    value={newChartName}
-                                                    onChange={(e) => setNewChartName(e.target.value)}
-                                                    size="small"
-                                                    sx={{ flexGrow: 1, marginRight: 1 }}
-                                                />
-                                                <IconButton
-                                                    onClick={async () => {
-                                                        if (newChartName.trim()) {
-                                                            const updated = await updateChartName(chart.id, newChartName);
-                                                            setCharts(prev => prev.map(c => c.id === chart.id ? updated : c));
-                                                        }
-                                                        setEditingChartId(null);
-                                                    }}
-                                                >
-                                                    <SaveIcon />
-                                                </IconButton>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ListItemButton onClick={() => openChart(chart)} selected={chart === selected}>
-                                                    <FileIcon sx={{ marginRight: 1 }} />
-                                                    <ListItemText primary={chart.name} />
-                                                </ListItemButton>
-                                                {Cookies.get('is_admin') && (
-                                                    <IconButton onClick={() => { setEditingChartId(chart.id); setNewChartName(chart.name); }}>
-                                                        <EditIcon fontSize="small" />
-                                                    </IconButton>
-                                                )}
-                                                <Checkbox
-                                                    checked={favorites.some(fav => fav.id === chart.id)}
-                                                    onChange={() => toggleFavorite(chart)}
-                                                    icon={<StarBorderIcon />}
-                                                    checkedIcon={<StarIcon />}
-                                                />
-                                            </>
-                                        )}
-                                    </ListItem>
-                                ))}
-                        </List>
-                    </TabPanel>
-                ))}
-            </Drawer>
-
-            <Drawer anchor='right' open={favoritesDrawer} onClose={() => setFavoritesDrawer(false)} sx={{ display: 'flex', '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth } }}>
-                <Box p={2} borderBottom={1}>
-                    <Typography variant='h6' textAlign='center'>Favorites</Typography>
-                </Box>
-                {favorites.length ? (
-                    <List>
-                        {favorites.map((chart) => (
-                            <ListItem key={chart.name}>
-                                <ListItemButton onClick={() => openChart(chart)}>
-                                    <ListItemText primary={chart.name} />
-                                </ListItemButton>
-                                <Checkbox
-                                    checked={favorites.some(fav => fav.id === chart.id)}
-                                    onChange={() => toggleFavorite(chart)}
-                                    icon={<StarBorderIcon />}
-                                    checkedIcon={<StarIcon />}
-                                />
-                            </ListItem>
-                        ))}
-                    </List>
-                ) : (
-                    <Box flexGrow={1} display="flex" justifyContent="center" alignItems="center">Empty</Box>
-                )}
-            </Drawer>
-        </ThemeProvider>
-    );
-};
-
-export default Airport;
+      <FavoritesDrawer favorites={favorites} open={favoritesDrawerOpen} onClose={() => setFavoritesDrawerOpen(false)} onOpenChart={openChart} onToggleFavorite={toggleFavorite} />
+    </Box>
+  );
+}

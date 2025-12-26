@@ -1,31 +1,36 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "./generated"
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
-model airport {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  name   String  @unique
+model Airport {
   icao   String  @unique
-  charts chart[]
+  name   String
+  charts Chart[]
 }
 
-model chart {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  name        String  @unique
+model Chart {
+  id          String         @id @default(cuid())
+  icao        String?
+  name        String
+  category    ChartCategory?
   url         String
-  category    String?
-  lastUpdated String?
-  airport     airport @relation(fields: [airportId], references: [id])
-  airportId   String  @db.ObjectId
+  lastUpdated DateTime
+  airport     Airport?       @relation(fields: [icao], references: [icao])
+
+  @@unique([icao, name])
+  @@index([icao, category])
+}
+
+enum ChartCategory {
+  GND
+  APP
+  SID
+  STAR
+  ENR
+  VAC
 }
