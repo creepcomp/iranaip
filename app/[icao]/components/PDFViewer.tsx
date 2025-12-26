@@ -61,7 +61,7 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
       const page = await pdfDoc.getPage(currentPage);
       if (cancelled) return;
 
-      const viewport = page.getViewport({ scale: 1.5 });
+      const viewport = page.getViewport({ scale: 3 });
       const canvas = canvasRef.current!;
       const ctx = canvas.getContext('2d')!;
 
