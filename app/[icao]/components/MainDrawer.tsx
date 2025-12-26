@@ -18,7 +18,7 @@ export default function MainDrawer({ charts, favorites, open, onClose, onToggleF
   onOpenChart: (chart: Chart) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [tabIndex, setTabIndex] = useState('GND');
+  const [tabIndex, setTabIndex] = useState('GEN');
 
   const groupedCharts = charts.reduce<Record<string, Chart[]>>((acc, c) => {
     const k = c.category || 'Uncategorized';

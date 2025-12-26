@@ -1,8 +1,7 @@
 export enum ChartCategory {
+  GEN = "GEN",
   GND = "GND",
   SID = "SID",
   STAR = "STAR",
-  APP = "APP",
-  ENR = "ENR",
-  VAC = "VAC"
+  APP = "APP"
 }

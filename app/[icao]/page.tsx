@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { AppBar, Box, Button, IconButton, Toolbar, Typography, Avatar, Tabs, Tab } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { AppBar, Box, Button, IconButton, Toolbar, Typography, Avatar, Tabs, Tab, CircularProgress } from '@mui/material';
 import { Bedtime as MoonIcon, WbSunny as SunIcon, Menu as MenuIcon, Star as StarIcon, Close as CloseIcon } from '@mui/icons-material';
 import Cookies from 'js-cookie';
 
@@ -22,6 +22,7 @@ export default function AirportPage({ params }: { params: Promise<{ icao: string
   const [activeTab, setActiveTab] = useState(0);
   const [mainDrawerOpen, setMainDrawerOpen] = useState(true);
   const [favoritesDrawerOpen, setFavoritesDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const saved = Cookies.get('favorites');
@@ -30,6 +31,7 @@ export default function AirportPage({ params }: { params: Promise<{ icao: string
     (async () => {
       const { icao } = await params;
       setCharts(await getCharts(icao));
+      setLoading(false);
     })();
   }, [params]);
 
@@ -110,6 +112,13 @@ export default function AirportPage({ params }: { params: Promise<{ icao: string
       <MainDrawer charts={charts} favorites={favorites} open={mainDrawerOpen} onClose={() => setMainDrawerOpen(false)} onToggleFavorite={toggleFavorite} onOpenChart={openChart} />
 
       <FavoritesDrawer favorites={favorites} open={favoritesDrawerOpen} onClose={() => setFavoritesDrawerOpen(false)} onOpenChart={openChart} onToggleFavorite={toggleFavorite} />
+
+      {loading && (
+        <Box position="fixed" top={0} left={0} width="100vw" height="100vh" display="flex" justifyContent="center" alignItems="center" bgcolor="rgba(0, 0, 0, 0.3)" zIndex={1300}>
+          <CircularProgress />
+        </Box>
+      )}
+
     </Box>
   );
 }

@@ -11,10 +11,11 @@ export default function ChartList({ charts, favorites, onToggleFavorite, onOpenC
   onToggleFavorite: (chart: Chart) => void;
   onOpenChart: (chart: Chart) => void;
 }) {
+  const sortedCharts = [...charts].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <List>
-      {charts.map(chart => (
+      {sortedCharts.map(chart => (
         <ListItem key={chart.id} sx={{ p: 0, '&:hover .favorite-box': { display: 'block' } }}>
           <ListItemButton onClick={() => onOpenChart(chart)}>
             <FileIcon sx={{ mr: 1 }} />

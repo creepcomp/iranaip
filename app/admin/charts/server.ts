@@ -8,7 +8,7 @@ const chartSchema = z.object({
   id: z.string().optional(),
   icao: z.string().max(4, "ICAO code must be at most 4 characters").optional(),
   name: z.string().min(1, "Name is required").max(255, "Name is too long"),
-  category: z.enum(["GND", "APP", "SID", "STAR", "ENR", "VAC"]).optional(),
+  category: z.enum(["GEN", "GND", "APP", "SID", "STAR"]).optional(),
   url: z.string().min(1, "URL is required"),
   lastUpdated: z.date(),
 });
