@@ -2,6 +2,7 @@ import { Avatar, Box, Button, Input, List, ListItem, ListItemButton, ListItemTex
 import { useEffect, useState } from "react";
 import { findAirport } from "./server";
 import { airport } from "@prisma/client";
+import { useTheme } from "../providers/ThemeProvider";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");

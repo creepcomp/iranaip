@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, IconButton, Paper, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton, Paper, Typography } from '@mui/material';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { NavigateNext, NavigateBefore } from '@mui/icons-material';
 import type { Chart } from '@/prisma/generated/client';
@@ -14,6 +14,7 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
   const [pdfjs, setPdfjs] = useState<PdfJs | null>(null);
   const [pdfDoc, setPdfDoc] = useState<import('pdfjs-dist').PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -34,6 +35,7 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
     if (!pdfjs) return;
 
     let cancelled = false;
+    setLoading(true);
 
     (async () => {
       const pdf = await pdfjs.getDocument(`/api/proxy?url=${encodeURIComponent(chart.url)}`).promise;
@@ -41,6 +43,7 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
       if (!cancelled) {
         setPdfDoc(pdf);
         setCurrentPage(1);
+        setLoading(false);
       }
     })();
 
@@ -75,17 +78,16 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
     };
   }, [pdfDoc, currentPage]);
 
-  const handlePrevPage = () => {
-    setCurrentPage((p) => Math.max(1, p - 1));
-  };
-
+  const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => {
     if (!pdfDoc) return;
     setCurrentPage((p) => Math.min(pdfDoc.numPages, p + 1));
   };
 
-  if (!pdfjs) {
-    return <Typography>Loading PDF engine ..</Typography>;
+  if (!pdfjs || loading) {
+    return <Box display="flex" justifyContent="center" alignItems="center" width="100%" height="100%">
+      <CircularProgress />
+    </Box>;
   }
 
   return (
@@ -93,7 +95,15 @@ export default function PDFViewer({ chart, theme }: { chart: Chart, theme: 'dark
       <TransformWrapper minScale={0.5} maxScale={4}>
         <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
           <Paper>
-            <canvas ref={canvasRef} style={{ filter: theme === 'dark' ? 'invert(1) hue-rotate(180deg)' : 'none', background: theme === 'dark' ? '#000' : '#fff', width: '100%', height: '100%' }} />
+            <canvas
+              ref={canvasRef}
+              style={{
+                filter: theme === 'dark' ? 'invert(1) hue-rotate(180deg)' : 'none',
+                background: theme === 'dark' ? '#000' : '#fff',
+                width: '100%',
+                height: '100%',
+              }}
+            />
           </Paper>
         </TransformComponent>
       </TransformWrapper>

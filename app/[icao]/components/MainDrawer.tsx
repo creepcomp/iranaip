@@ -37,7 +37,7 @@ export default function MainDrawer({ charts, favorites, open, onClose, onToggleF
       </Box>
 
       <Box p={1}>
-        <TextField fullWidth placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <TextField size='small' fullWidth placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
       </Box>
 
       <TabContext value={tabIndex}>

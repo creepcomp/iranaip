@@ -15,12 +15,12 @@ export default function ChartList({ charts, favorites, onToggleFavorite, onOpenC
   return (
     <List>
       {charts.map(chart => (
-        <ListItem key={chart.id}>
+        <ListItem key={chart.id} sx={{ p: 0, '&:hover .favorite-box': { display: 'block' } }}>
           <ListItemButton onClick={() => onOpenChart(chart)}>
             <FileIcon sx={{ mr: 1 }} />
             <ListItemText primary={chart.name} />
           </ListItemButton>
-          <Box>
+          <Box className="favorite-box" display="none" position="absolute" right={0} p={1}>
             <Checkbox
               checked={favorites.some(f => f.id === chart.id)}
               onChange={() => onToggleFavorite(chart)}

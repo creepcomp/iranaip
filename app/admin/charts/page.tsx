@@ -52,7 +52,6 @@ export default function ChartsAdminPage() {
             <TableCell>ICAO</TableCell>
             <TableCell>Name</TableCell>
             <TableCell>Category</TableCell>
-            <TableCell>URL</TableCell>
             <TableCell>Last Updated</TableCell>
             <TableCell>Actions</TableCell>
           </TableRow>
@@ -63,7 +62,6 @@ export default function ChartsAdminPage() {
               <TableCell>{c.icao}</TableCell>
               <TableCell>{c.name}</TableCell>
               <TableCell>{c.category}</TableCell>
-              <TableCell><a href={c.url} target="_blank" rel="noopener noreferrer">Link</a></TableCell>
               <TableCell>{new Date(c.lastUpdated).toUTCString()}</TableCell>
               <TableCell>
                 <Button size="small" onClick={() => setChart(c)}>Edit</Button>
