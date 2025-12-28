@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Drawer, Tab, TextField, Typography } from '@mui/material';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
 import ChartList from './ChartList';

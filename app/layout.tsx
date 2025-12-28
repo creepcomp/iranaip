@@ -1,20 +1,26 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
+import { AdminProvider } from "./providers/AdminProvider";
+import { isAdmin } from "@/lib/isAdmin";
 
 export const metadata: Metadata = {
-    title: "Iran AIP Charts",
-    description: "Access all updated AIP charts of Iran Airports.",
+  title: "Iran AIP Charts",
+  description: "Access all updated AIP charts of Iran Airports.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <html lang="en">
-            <body>
-                <ThemeProvider>
-                    {children}
-                </ThemeProvider>
-            </body>
-        </html>
-    );
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const admin = await isAdmin();
+
+  return (
+    <html lang="en">
+      <body>
+        <AdminProvider isAdmin={admin}>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </AdminProvider>
+      </body>
+    </html>
+  );
 }

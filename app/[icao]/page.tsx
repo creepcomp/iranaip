@@ -71,7 +71,7 @@ export default function AirportPage({ params }: { params: Promise<{ icao: string
               {openCharts.map((chart) => (
                 <Tab key={chart.id} label={
                   <Box display="flex" alignItems="center">
-                    <Typography variant='caption' noWrap>{chart.name}</Typography>
+                    <Typography width={250} variant='caption' noWrap>{chart.name}</Typography>
                     <IconButton size="small" onClick={(e) => { e.stopPropagation(); closeChart(chart.id); }}><CloseIcon fontSize="small" /></IconButton>
                   </Box>
                 } />

@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Box, Drawer, Typography } from '@mui/material';
 import ChartList from './ChartList';
 import { Chart } from '@/prisma/generated/client';

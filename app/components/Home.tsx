@@ -1,12 +1,11 @@
 import { Avatar, Box, Button, Input, List, ListItem, ListItemButton, ListItemText, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { findAirport } from "./server";
-import { airport } from "@prisma/client";
-import { useTheme } from "../providers/ThemeProvider";
+import { Airport } from "@/prisma/generated/client";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [airports, setAirports] = useState<airport[]>([]);
+  const [airports, setAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export default function Home() {
         <List className="overflow-auto">
           {loading && <ListItem>Loading...</ListItem>}
           {airports.map((airport) => (
-            <ListItem key={airport.id}>
+            <ListItem key={airport.icao}>
               <ListItemButton key={airport.name} href={`/${airport.icao}`}>
                 <ListItemText primary={airport.name} secondary={airport.icao} />
               </ListItemButton>
