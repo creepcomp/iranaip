@@ -4,18 +4,15 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import { AdminProvider } from "./providers/AdminProvider";
 import { isAdmin } from "@/lib/isAdmin";
 
+const title = { default: 'Iran AIP Charts', template: '%s | Iran AIP Charts' };
+const description = 'Access the latest AIP charts for all Iran airports, including SID, STAR, ILS, and approach procedures. Essential resources for pilots, flight planners, and aviation enthusiasts.';
+
 export const metadata: Metadata = {
-  title: {
-    default: 'Iran AIP Charts',
-    template: '%s | Iran AIP Charts'
-  },
-  description: 'Access all updated AIP charts of Iran airports including SID, STAR, and ILS.',
+  title: title,
+  description: description,
   openGraph: {
-    title: {
-      default: 'Iran AIP Charts',
-      template: '%s | Iran AIP Charts'
-    },
-    description: 'Access all updated AIP charts of Iran airports.',
+    title: title,
+    description: description,
     type: 'website',
   }
 };

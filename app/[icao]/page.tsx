@@ -7,12 +7,15 @@ export async function generateMetadata({ params }: { params: Promise<{ icao: str
 
   const airport = await prisma.airport.findFirst({ where: { icao } });
 
+  const title = `${airport.name} (${airport.icao})`;
+  const description = `Find the latest AIP charts, approach procedures, and airport information for ${airport.name} (${airport.icao}). Essential for pilots, flight planners, and aviation enthusiasts.`;
+
   return {
-    title: `${airport.name} (${airport.icao})`,
-    description: `AIP charts for ${airport.name} (${airport.icao}) airport. View SID, STAR, ILS, and airport diagrams.`,
+    title: title,
+    description: description,
     openGraph: {
-      title: `${icao} Airport Charts`,
-      description: `Updated AIP charts for ${airport.name} (${airport.icao}) airport.`,
+      title: title,
+      description: description,
       type: 'website',
     },
   };
