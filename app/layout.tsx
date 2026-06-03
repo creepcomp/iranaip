@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { AdminProvider } from "./providers/AdminProvider";
 import { isAdmin } from "@/lib/isAdmin";
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v13-appRouter';
 
 const title = { default: 'Iran AIP Charts', template: '%s | Iran AIP Charts' };
 const description = 'Access the latest AIP charts for all Iran airports, including SID, STAR, ILS, and approach procedures. Essential resources for pilots, flight planners, and aviation enthusiasts.';
@@ -23,11 +24,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body>
-        <AdminProvider isAdmin={admin}>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
-        </AdminProvider>
+        <AppRouterCacheProvider>
+          <AdminProvider isAdmin={admin}>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
+          </AdminProvider>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
