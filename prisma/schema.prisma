@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Airport {
-  icao   String  @unique
+  icao   String  @id
   name   String
   charts Chart[]
 }
